@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>محرر ومفكك الخطوط العربية الاحترافي للمنسوجات</title>
+    <title>محرر ومفكك الخطوط العربية الاحترافي للمنسوجات والبطانيات</title>
     <style>
         @font-face {
             font-family: 'LaylaThuluth';
@@ -11,7 +11,6 @@
             font-weight: normal;
             font-style: normal;
         }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
@@ -136,14 +135,27 @@
             border: 1px solid #94a3b8;
             border-radius: 6px;
             padding: 8px 14px;
-            display: flex;
+            display: inline-flex !important;
             align-items: center;
             justify-content: center;
+            gap: 4px;
             cursor: pointer;
             user-select: none;
             font-weight: bold;
         }
         .tashkeel-item:hover { background: #cbd5e1; }
+        
+        .decor-img-preview {
+            width: 35px;
+            height: 35px;
+            object-fit: contain;
+            margin-left: 8px;
+            pointer-events: none;
+            vertical-align: middle;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 4px;
+            padding: 2px;
+        }
         .bank-title {
             width: 100%;
             text-align: right;
@@ -152,27 +164,6 @@
             color: #475569;
             margin-bottom: 5px;
         }
-
-        .decor-img-preview {
-            width: 35px;
-            height: 35px;
-            object-fit: contain;
-            margin-left: 8px; /* Adds clean spacing to the left of the text label */
-            pointer-events: none; /* Prevents the image node from interrupting button clicks */
-            vertical-align: middle;
-            background: rgba(255, 255, 255, 0.8); /* Gives a soft backing so dark shapes stand out */
-            border-radius: 4px;
-            padding: 2px;
-        }
-        
-        /* Forces the container buttons to align items beautifully side-by-side */
-        .tashkeel-item {
-            display: inline-flex !important;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-        }
-
 
         .canvas-frame {
             border: 2px dashed #94a3b8;
@@ -187,13 +178,22 @@
             margin-top: 10px;
             position: relative;
         }
-        canvas { display: block; }
+        
+        /* FIXED: Forces GPU layer refreshes and defines a solid visual backup workspace grid */
+        canvas { 
+            display: block; 
+            background-color: transparent;
+            transform: translateZ(0); 
+            -webkit-transform: translateZ(0);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>محرر ومفكك الخطوط العربية الاحترافي للمنسوجات والبطانيات</h1>
+    <h1>محرر ومفكك الخطوط العربية المطور للبطانيات المنسوجة</h1>
     
     <div class="control-panel">
         <label class="file-label">
@@ -202,9 +202,8 @@
         </label>
         <span id="fontStatus" class="status-badge">خط النظام الافتراضي</span>
 
-        <!-- Upgraded Multi-line Input Box Area -->
         <div class="input-group">
-            <textarea id="textInput" placeholder="اكتب النص هنا (يدعم الأسطر المتعددة لفقرات كاملة)...">فاطمة</textarea>
+            <textarea id="textInput" placeholder="اكتب النص هنا...">فاطمة</textarea>
         </div>
 
         <div class="slider-group">
@@ -217,7 +216,6 @@
             <input type="range" id="sizeSlider" min="20" max="300" value="110" step="2" oninput="updateSelectedSize(this.value)">
         </div>
 
-        <!-- NEW: Dynamic Viewport Workspace Expansion Zoom Slider Control -->
         <div class="slider-group" style="background-color: #fffbeb; border-color: #fef08a;">
             <label for="zoomSlider" style="color: #b45309;">زوم اللوحة:</label>
             <input type="range" id="zoomSlider" min="0.2" max="3" value="1" step="0.05" oninput="updateWorkspaceZoom(this.value)">
@@ -251,7 +249,6 @@
         <div class="tashkeel-item" onclick="addSingleElement('ٍ', true)">تنوين كسر ٍ</div>
     </div>
 
-        <!-- 8 Local PNG Decorative Ornaments Bank Dashboard with Image Previews Restored -->
     <div class="tashkeel-bank" style="background-color: #e0f2fe;">
         <div class="bank-title" style="color: #0369a1;">زخارف وخامات المنسوجات المخصصة (PNG):</div>
         <div class="tashkeel-item" onclick="addCustomImageElement('decor1.png')"><img src="decor1.png" class="decor-img-preview" alt="1"> زخرفة 1</div>
@@ -264,14 +261,13 @@
         <div class="tashkeel-item" onclick="addCustomImageElement('decor8.png')"><img src="decor8.png" class="decor-img-preview" alt="8"> زخرفة 8</div>
     </div>
 
-
-    <div class="canvas-frame">
+        <div class="canvas-frame">
         <canvas id="thuluthCanvas" width="1040" height="450"></canvas>
     </div>
 </div>
 
 <script>
-        const canvas = document.getElementById('thuluthCanvas');
+    const canvas = document.getElementById('thuluthCanvas');
     const ctx = canvas.getContext('2d');
     
     let elements = [];
@@ -281,40 +277,32 @@
     let currentDragBox = null;
     let startX, startY;
     
-    // Explicitly lock the fallback tracker array configurations
     let activeFontFamilyName = 'Arial, Traditional Arabic';
     let isFontFullyReady = false; 
     let zoomLevel = 1.0;
 
-    // Force browser memory alignment threads to cache the CSS font face tree cleanly on load
+    // Automatic font loader unblocks lazy-rendering bugs safely on page boot
     document.fonts.load("110px LaylaThuluth").then(() => {
         document.fonts.ready.then(() => {
             activeFontFamilyName = 'LaylaThuluth';
             isFontFullyReady = true;
-            
-            // Re-calculate boundary metric data and draw the initial frame flawlessly
             elements.forEach(el => {
                 if (!el.isImage) calculateElementBounds(el);
             });
             draw();
-            console.log("Default Calligraphy Font engine synchronized and pre-rendered successfully.");
         });
     }).catch(err => {
-        // Safe structural fallback bypass configurations if font fails loading sequence
         activeFontFamilyName = 'Arial, Traditional Arabic';
         isFontFullyReady = true;
         draw();
     });
 
-
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
-        
-        // Apply universal zoom matrix transformations smoothly
         ctx.scale(zoomLevel, zoomLevel);
-
-                for (let i = 0; i < elements.length; i++) {
+        
+        for (let i = 0; i < elements.length; i++) {
             const el = elements[i];
             
             ctx.shadowColor = "rgba(0, 0, 0, 0.25)";
@@ -324,14 +312,12 @@
 
             if (selectedElements.includes(el)) {
                 ctx.strokeStyle = '#3b82f6';
-                ctx.lineWidth = 2 / zoomLevel; // Normalize vector outlines to zoom context
+                ctx.lineWidth = 2 / zoomLevel;
                 ctx.strokeRect(el.x - el.width/2 - 6, el.y - el.height/2 - 6, el.width + 12, el.height + 12);
             }
 
             if (el.isImage) {
-                // FIXED: Corrected getElementByld to getElementById
                 const tintColor = el.color || document.getElementById('tashkeelColor').value;
-                
                 const bufferCanvas = document.createElement('canvas');
                 const bCtx = bufferCanvas.getContext('2d');
                 bufferCanvas.width = el.width + (el.thickness * 2) + 20;
@@ -420,9 +406,9 @@
     }
 
     function loadLocalFontFile(inputElement) {
-        if (inputElement.files && inputElement.files[0]) {
+        if (inputElement.files && inputElement.files) {
             isFontFullyReady = false;
-            const file = inputElement.files[0]; 
+            const file = inputElement.files; 
             const reader = new FileReader();
             
             reader.onload = function(event) {
@@ -532,7 +518,7 @@
             
             elements.push({
                 isImage: true,
-                img: img,
+                                img: img,
                 text: '[زخرفة]',
                 x: (canvas.width / 2) / zoomLevel,
                 y: (canvas.height / 2) / zoomLevel,
@@ -560,7 +546,7 @@
     function updateSelectedSize(val) {
         if (selectedElements.length === 0) return;
         const newSize = parseFloat(val);
-                selectedElements.forEach(el => {
+        selectedElements.forEach(el => {
             el.size = newSize;
             if (el.isImage) {
                 el.width = newSize;
@@ -597,12 +583,10 @@
         draw();
     }
 
-        // Helper function to extract correct coordinates from both mouse and mobile touch inputs
-        function getEventCoordinates(e) {
+    function getEventCoordinates(e) {
         const rect = canvas.getBoundingClientRect();
         let clientX, clientY;
         
-        // FIXED: Access the first active touch point using [0] index properly
         if (e.touches && e.touches.length > 0) {
             clientX = e.touches[0].clientX;
             clientY = e.touches[0].clientY;
@@ -620,10 +604,7 @@
         };
     }
 
-
-    // UNIFIED PRESSED INTERACTION (Mouse & Mobile Touch Start)
     function handleStartInteraction(e) {
-        // Prevent mobile screens from bouncing or zooming while dragging items
         if (e.cancelable) e.preventDefault();
         
         const coords = getEventCoordinates(e);
@@ -657,8 +638,8 @@
             }
             
             isDragging = true;
-            document.getElementById('thicknessSlider').value = selectedElements.length === 1 ? selectedElements.thickness : 0;
-            document.getElementById('sizeSlider').value = selectedElements.length === 1 ? selectedElements.size : 110;
+            document.getElementById('thicknessSlider').value = selectedElements.length === 1 ? selectedElements[0].thickness : 0;
+            document.getElementById('sizeSlider').value = selectedElements.length === 1 ? selectedElements[0].size : 110;
             
             selectedElements.forEach(el => {
                 el.dragStartX = mouseX - el.x;
@@ -674,7 +655,6 @@
         draw();
     }
 
-    // UNIFIED MOVE INTERACTION (Mouse Move & Mobile Touch Drag)
     function handleMoveInteraction(e) {
         if (!isDragging && !dragBoxStart) return;
         if (e.cancelable) e.preventDefault();
@@ -695,7 +675,6 @@
         }
     }
 
-    // UNIFIED RELEASE INTERACTION (Mouse Up & Mobile Touch End)
     function handleEndInteraction(e) {
         isDragging = false;
         
@@ -719,35 +698,28 @@
         draw();
     }
 
-    // Map desktop mouse event channels
     canvas.addEventListener('mousedown', handleStartInteraction);
     canvas.addEventListener('mousemove', handleMoveInteraction);
     window.addEventListener('mouseup', handleEndInteraction);
 
-    // Map responsive mobile touch event channels 
     canvas.addEventListener('touchstart', handleStartInteraction, { passive: false });
     canvas.addEventListener('touchmove', handleMoveInteraction, { passive: false });
     window.addEventListener('touchend', handleEndInteraction);
 
-    // Dynamic Mobile Double-Tap to Delete Simulation
     let lastTapTime = 0;
     canvas.addEventListener('touchstart', function(e) {
         const currentTime = new Date().getTime();
         const tapLength = currentTime - lastTapTime;
         
         if (tapLength < 300 && tapLength > 0) {
-            // Trigger double click logic natively on fast touch double-taps
             const coords = getEventCoordinates(e);
-            const mouseX = coords.x;
-            const mouseY = coords.y;
-
             for (let i = elements.length - 1; i >= 0; i--) {
                 const el = elements[i];
                 const isDamma = (el.text === 'ُ');
                 const hW = (isDamma ? 140 : el.width) / 1.2;
                 const hH = (isDamma ? 110 : el.height) / 1.2;
 
-                if (Math.abs(mouseX - el.x) < hW && Math.abs(mouseY - el.y) < hH) {
+                if (Math.abs(coords.x - el.x) < hW && Math.abs(coords.y - el.y) < hH) {
                     elements = elements.filter(item => item !== el);
                     selectedElements = selectedElements.filter(item => item !== el);
                     draw();
@@ -759,7 +731,6 @@
         lastTapTime = currentTime;
     });
 
-    // Desktop Double Click fallback listener rule
     canvas.addEventListener('dblclick', function(e) {
         const coords = getEventCoordinates(e);
         for (let i = elements.length - 1; i >= 0; i--) {
@@ -795,18 +766,112 @@
         zoomLevel = 1.0;
         draw();
         
-        const absoluteExportURI = canvas.toDataURL('image/png');
-        const targetSystemAnchor = document.createElement('a');
-        targetSystemAnchor.href = absoluteExportURI;
-        targetSystemAnchor.download = 'woven_blanket_calligraphy.png';
-        document.body.appendChild(targetSystemAnchor);
-        targetSystemAnchor.click();
-        document.body.removeChild(targetSystemAnchor);
+        const scaleMultiplier = 4.0;
+        const highResCanvas = document.createElement('canvas');
+        const hrCtx = highResCanvas.getContext('2d');
+        highResCanvas.width = canvas.width * scaleMultiplier;
+        highResCanvas.height = canvas.height * scaleMultiplier;
         
-        selectedElements = temp;
-        zoomLevel = prevZoom;
-        draw();
+        hrCtx.imageSmoothingEnabled = true;
+        hrCtx.imageSmoothingQuality = 'high';
+        hrCtx.scale(scaleMultiplier, scaleMultiplier);
+        
+        for (let i = 0; i < elements.length; i++) {
+            const el = elements[i];
+            hrCtx.shadowColor = "rgba(0, 0, 0, 0.25)";
+            hrCtx.shadowBlur = 8 * scaleMultiplier;
+            hrCtx.shadowOffsetX = 3 * scaleMultiplier;
+            hrCtx.shadowOffsetY = 4 * scaleMultiplier;
+
+            if (el.isImage) {
+                const tintColor = el.color || document.getElementById('tashkeelColor').value;
+                        const bufferCanvas = document.createElement('canvas');
+        const bCtx = bufferCanvas.getContext('2d');
+        bufferCanvas.width = el.width + (el.thickness * 2) + 20;
+        bufferCanvas.height = el.height + (el.thickness * 2) + 20;
+        
+        bCtx.imageSmoothingEnabled = true;
+        bCtx.imageSmoothingQuality = 'high';
+        
+        const centerX = bufferCanvas.width / 2;
+        const centerY = bufferCanvas.height / 2;
+        
+        const steps = Math.ceil(el.thickness);
+        if (steps > 0) {
+            bCtx.fillStyle = tintColor;
+            for (let angle = 0; angle < 360; angle += 15) {
+                const rad = angle * Math.PI / 180;
+                const ex = centerX - el.width/2 + Math.cos(rad) * el.thickness;
+                const ey = centerY - el.height/2 + Math.sin(rad) * el.thickness;
+                bCtx.drawImage(el.img, ex, ey, el.width, el.height);
+            }
+            bCtx.globalCompositeOperation = 'source-in';
+            bCtx.fillRect(0, 0, bufferCanvas.width, bufferCanvas.height);
+            bCtx.globalCompositeOperation = 'source-over';
+        }
+        
+        bCtx.drawImage(el.img, centerX - el.width/2, centerY - el.height/2, el.width, el.height);
+        bCtx.globalCompositeOperation = 'source-atop';
+        bCtx.fillStyle = tintColor;
+        bCtx.fillRect(0, 0, bufferCanvas.width, bufferCanvas.height);
+        bCtx.globalCompositeOperation = 'source-over';
+        
+        hrCtx.drawImage(bufferCanvas, el.x - centerX, el.y - centerY);
+        
+    } else {
+        hrCtx.font = `${el.size}px ${activeFontFamilyName}`;
+        hrCtx.fillStyle = el.color;
+        hrCtx.textAlign = 'center';
+        hrCtx.textBaseline = 'middle';
+
+        if (el.thickness > 0) {
+            hrCtx.strokeStyle = el.color;
+            hrCtx.lineWidth = el.thickness * 1.5;
+            hrCtx.lineJoin = "round";
+            
+            if (el.lines) {
+                let lineY = el.y - ((el.lines.length - 1) * el.size * 0.6);
+                el.lines.forEach(line => {
+                    hrCtx.strokeText(line, el.x, lineY);
+                    lineY += el.size * 1.2;
+                });
+            } else {
+                hrCtx.strokeText(el.text, el.x, el.y);
+            }
+        }
+        
+        if (el.lines) {
+            let lineY = el.y - ((el.lines.length - 1) * el.size * 0.6);
+            el.lines.forEach(line => {
+                hrCtx.fillText(line, el.x, lineY);
+                lineY += el.size * 1.2;
+            });
+        } else {
+            hrCtx.fillText(el.text, el.x, el.y);
+        }
     }
+
+    hrCtx.shadowColor = "transparent";
+    hrCtx.shadowBlur = 0;
+    hrCtx.shadowOffsetX = 0;
+    hrCtx.shadowOffsetY = 0;
+}
+
+const absoluteExportURI = highResCanvas.toDataURL('image/png');
+const targetSystemAnchor = document.createElement('a');
+targetSystemAnchor.href = absoluteExportURI;
+targetSystemAnchor.download = 'production_ready_woven_blanket.png';
+document.body.appendChild(targetSystemAnchor);
+targetSystemAnchor.click();
+document.body.removeChild(targetSystemAnchor);
+
+selectedElements = temp;
+zoomLevel = prevZoom;
+draw();
+}
 </script>
 </body>
 </html>
+
+
+
