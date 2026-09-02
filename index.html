@@ -327,36 +327,37 @@ if (dragBoxStart && currentDragBox) {
 }
 
 function loadLocalFontFile(inputElement) {
-if (inputElement.files && inputElement.files) {
-    isFontFullyReady = false;
-    const file = inputElement.files;
-    const reader = new FileReader();
-    
-    reader.onload = function(event) {
-        const uniqueFontID = 'CalligraphyFont_' + Date.now();
-        const fontFace = new FontFace(uniqueFontID, event.target.result);
+    if (inputElement.files && inputElement.files[0]) {
+        // FIXED: Extract the actual single file object [0] from the folder list
+        const file = inputElement.files[0]; 
+        const reader = new FileReader();
         
-        fontFace.load().then(function(loadedFace) {
-            document.fonts.add(loadedFace);
-            activeFontFamilyName = uniqueFontID;
+        reader.onload = function(event) {
+            const uniqueFontID = 'CalligraphyFont_' + Date.now();
+            const fontFace = new FontFace(uniqueFontID, event.target.result);
             
-            document.fonts.ready.then(() => {
-                isFontFullyReady = true;
-                document.getElementById('fontStatus').textContent = "مفعّل: " + file.name;
-                document.getElementById('fontStatus').classList.add('status-loaded');
+            fontFace.load().then(function(loadedFace) {
+                document.fonts.add(loadedFace);
+                activeFontFamilyName = uniqueFontID;
                 
-                elements.forEach(el => {
-                    if (!el.isImage) calculateElementBounds(el);
+                document.fonts.ready.then(() => {
+                    isFontFullyReady = true;
+                    document.getElementById('fontStatus').textContent = "مفعّل: " + file.name;
+                    document.getElementById('fontStatus').classList.add('status-loaded');
+                    
+                    // Recalculate text boxes so the font updates instantly
+                    elements.forEach(el => {
+                        if (!el.isImage) calculateElementBounds(el);
+                    });
+                    draw();
                 });
-                draw();
+            }).catch(err => {
+                isFontFullyReady = true;
+                alert("Error loading font layout: " + err);
             });
-        }).catch(err => {
-            isFontFullyReady = true;
-            alert("Error loading font layout: " + err);
-        });
-    };
-    reader.readAsArrayBuffer(file);
-}
+        };
+        reader.readAsArrayBuffer(file);
+    }
 }
 
 function calculateElementBounds(el) {
