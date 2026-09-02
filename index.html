@@ -597,13 +597,40 @@
         draw();
     }
 
-    canvas.addEventListener('mousedown', function(e) {
+        // Helper function to extract correct coordinates from both mouse and mobile touch inputs
+    function getEventCoordinates(e) {
         const rect = canvas.getBoundingClientRect();
-        const mouseX = (e.clientX - rect.left) / zoomLevel;
-        const mouseY = (e.clientY - rect.top) / zoomLevel;
+        let clientX, clientY;
+        
+        // Check if input is a mobile touch gesture
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else if (e.changedTouches && e.changedTouches.length > 0) {
+            clientX = e.changedTouches[0].clientX;
+            clientY = e.changedTouches[0].clientY;
+        } else {
+            // Fallback to desktop mouse coordinates
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        
+        return {
+            x: (clientX - rect.left) / zoomLevel,
+            y: (clientY - rect.top) / zoomLevel
+        };
+    }
+
+    // UNIFIED PRESSED INTERACTION (Mouse & Mobile Touch Start)
+    function handleStartInteraction(e) {
+        // Prevent mobile screens from bouncing or zooming while dragging items
+        if (e.cancelable) e.preventDefault();
+        
+        const coords = getEventCoordinates(e);
+        const mouseX = coords.x;
+        const mouseY = coords.y;
 
         let hitElement = null;
-        
         for (let i = elements.length - 1; i >= 0; i--) {
             const el = elements[i];
             const isDamma = (el.text === 'ُ');
@@ -645,12 +672,16 @@
             document.getElementById('sizeSlider').value = 110;
         }
         draw();
-    });
+    }
 
-    canvas.addEventListener('mousemove', function(e) {
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = (e.clientX - rect.left) / zoomLevel;
-        const mouseY = (e.clientY - rect.top) / zoomLevel;
+    // UNIFIED MOVE INTERACTION (Mouse Move & Mobile Touch Drag)
+    function handleMoveInteraction(e) {
+        if (!isDragging && !dragBoxStart) return;
+        if (e.cancelable) e.preventDefault();
+
+        const coords = getEventCoordinates(e);
+        const mouseX = coords.x;
+        const mouseY = coords.y;
 
         if (isDragging && selectedElements.length > 0) {
             selectedElements.forEach(el => {
@@ -662,9 +693,10 @@
             currentDragBox = { x: mouseX * zoomLevel, y: mouseY * zoomLevel };
             draw();
         }
-    });
+    }
 
-    window.addEventListener('mouseup', function(e) {
+    // UNIFIED RELEASE INTERACTION (Mouse Up & Mobile Touch End)
+    function handleEndInteraction(e) {
         isDragging = false;
         
         if (dragBoxStart && currentDragBox) {
@@ -685,20 +717,58 @@
         dragBoxStart = null;
         currentDragBox = null;
         draw();
+    }
+
+    // Map desktop mouse event channels
+    canvas.addEventListener('mousedown', handleStartInteraction);
+    canvas.addEventListener('mousemove', handleMoveInteraction);
+    window.addEventListener('mouseup', handleEndInteraction);
+
+    // Map responsive mobile touch event channels 
+    canvas.addEventListener('touchstart', handleStartInteraction, { passive: false });
+    canvas.addEventListener('touchmove', handleMoveInteraction, { passive: false });
+    window.addEventListener('touchend', handleEndInteraction);
+
+    // Dynamic Mobile Double-Tap to Delete Simulation
+    let lastTapTime = 0;
+    canvas.addEventListener('touchstart', function(e) {
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTapTime;
+        
+        if (tapLength < 300 && tapLength > 0) {
+            // Trigger double click logic natively on fast touch double-taps
+            const coords = getEventCoordinates(e);
+            const mouseX = coords.x;
+            const mouseY = coords.y;
+
+            for (let i = elements.length - 1; i >= 0; i--) {
+                const el = elements[i];
+                const isDamma = (el.text === 'ُ');
+                const hW = (isDamma ? 140 : el.width) / 1.2;
+                const hH = (isDamma ? 110 : el.height) / 1.2;
+
+                if (Math.abs(mouseX - el.x) < hW && Math.abs(mouseY - el.y) < hH) {
+                    elements = elements.filter(item => item !== el);
+                    selectedElements = selectedElements.filter(item => item !== el);
+                    draw();
+                    break;
+                }
+            }
+            e.preventDefault();
+        }
+        lastTapTime = currentTime;
     });
 
+    // Desktop Double Click fallback listener rule
     canvas.addEventListener('dblclick', function(e) {
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = (e.clientX - rect.left) / zoomLevel;
-        const mouseY = (e.clientY - rect.top) / zoomLevel;
-
+        const coords = getEventCoordinates(e);
         for (let i = elements.length - 1; i >= 0; i--) {
             const el = elements[i];
             const isDamma = (el.text === 'ُ');
             const hW = (isDamma ? 140 : el.width) / 1.2;
             const hH = (isDamma ? 110 : el.height) / 1.2;
 
-            if (Math.abs(mouseX - el.x) < hW && Math.abs(mouseY - el.y) < hH) {
+            if (Math.abs(coords.x - el.x) < hW && Math.abs(coords.y - el.y) < hH) {
                 elements = elements.filter(item => item !== el);
                 selectedElements = selectedElements.filter(item => item !== el);
                 draw();
@@ -717,135 +787,26 @@
         }
     });
 
-            function exportTransparentPNG() {
-        // Cache active states to avoid layout disruption loops
-        const tempSelected = selectedElements;
+    function exportTransparentPNG() {
+        const temp = selectedElements;
         const prevZoom = zoomLevel;
         
-        // 1. Clear bounding selector tracks before high-res capture pass
         selectedElements = [];
         zoomLevel = 1.0;
         draw();
         
-        // 2. Build high-density offscreen matrix replication buffer
-        const highResCanvas = document.createElement('canvas');
-        const hrCtx = highResCanvas.getContext('2d');
-        
-        // Apply production-grade 4x pixel density multiplier scaling parameters
-        const scaleMultiplier = 4.0; 
-        highResCanvas.width = canvas.width * scaleMultiplier;
-        highResCanvas.height = canvas.height * scaleMultiplier;
-        
-        // FIXED: Enforce high-fidelity pixel anti-aliasing interpolation filters over the context
-        hrCtx.imageSmoothingEnabled = true;
-        hrCtx.imageSmoothingQuality = 'high';
-        
-        // Sync native vector alignment contexts across upscale configurations
-        hrCtx.scale(scaleMultiplier, scaleMultiplier);
-        
-        // 3. Render clean duplication passes onto your high-res buffer map
-        for (let i = 0; i < elements.length; i++) {
-            const el = elements[i];
-            
-            // Adjust shadows relative to the 4x resolution upgrade mechanics
-            hrCtx.shadowColor = "rgba(0, 0, 0, 0.25)";
-            hrCtx.shadowBlur = 8 * scaleMultiplier;
-            hrCtx.shadowOffsetX = 3 * scaleMultiplier;
-            hrCtx.shadowOffsetY = 4 * scaleMultiplier;
-
-            if (el.isImage) {
-                const tintColor = el.color || document.getElementById('tashkeelColor').value;
-                const bufferCanvas = document.createElement('canvas');
-                const bCtx = bufferCanvas.getContext('2d');
-                bufferCanvas.width = el.width + (el.thickness * 2) + 20;
-                bufferCanvas.height = el.height + (el.thickness * 2) + 20;
-                
-                // FIXED: Enforce same smoothing rules onto the offscreen image tinting buffer context
-                bCtx.imageSmoothingEnabled = true;
-                bCtx.imageSmoothingQuality = 'high';
-                
-                const centerX = bufferCanvas.width / 2;
-                const centerY = bufferCanvas.height / 2;
-                
-                const steps = Math.ceil(el.thickness);
-                if (steps > 0) {
-                    bCtx.fillStyle = tintColor;
-                    for (let angle = 0; angle < 360; angle += 15) {
-                        const rad = angle * Math.PI / 180;
-                        const ex = centerX - el.width/2 + Math.cos(rad) * el.thickness;
-                        const ey = centerY - el.height/2 + Math.sin(rad) * el.thickness;
-                        bCtx.drawImage(el.img, ex, ey, el.width, el.height);
-                    }
-                    bCtx.globalCompositeOperation = 'source-in';
-                    bCtx.fillRect(0, 0, bufferCanvas.width, bufferCanvas.height);
-                    bCtx.globalCompositeOperation = 'source-over';
-                }
-                
-                bCtx.drawImage(el.img, centerX - el.width/2, centerY - el.height/2, el.width, el.height);
-                bCtx.globalCompositeOperation = 'source-atop';
-                bCtx.fillStyle = tintColor;
-                bCtx.fillRect(0, 0, bufferCanvas.width, bufferCanvas.height);
-                bCtx.globalCompositeOperation = 'source-over';
-                
-                hrCtx.drawImage(bufferCanvas, el.x - centerX, el.y - centerY);
-                
-            } else {
-                hrCtx.font = `${el.size}px ${activeFontFamilyName}`;
-                hrCtx.fillStyle = el.color;
-                hrCtx.textAlign = 'center';
-                hrCtx.textBaseline = 'middle';
-
-                if (el.thickness > 0) {
-                    hrCtx.strokeStyle = el.color;
-                    hrCtx.lineWidth = el.thickness * 1.5;
-                    hrCtx.lineJoin = "round";
-                    
-                    if (el.lines) {
-                        let lineY = el.y - ((el.lines.length - 1) * el.size * 0.6);
-                        el.lines.forEach(line => {
-                            hrCtx.strokeText(line, el.x, lineY);
-                            lineY += el.size * 1.2;
-                        });
-                    } else {
-                        hrCtx.strokeText(el.text, el.x, el.y);
-                    }
-                }
-                
-                if (el.lines) {
-                    let lineY = el.y - ((el.lines.length - 1) * el.size * 0.6);
-                    el.lines.forEach(line => {
-                        hrCtx.fillText(line, el.x, lineY);
-                        lineY += el.size * 1.2;
-                    });
-                } else {
-                    hrCtx.fillText(el.text, el.x, el.y);
-                }
-            }
-
-            hrCtx.shadowColor = "transparent";
-            hrCtx.shadowBlur = 0;
-            hrCtx.shadowOffsetX = 0;
-            hrCtx.shadowOffsetY = 0;
-        }
-
-        // 4. Stream high-res asset stream onto clean download package links
-        const absoluteExportURI = highResCanvas.toDataURL('image/png');
+        const absoluteExportURI = canvas.toDataURL('image/png');
         const targetSystemAnchor = document.createElement('a');
         targetSystemAnchor.href = absoluteExportURI;
-        targetSystemAnchor.download = 'production_ready_woven_blanket.png';
+        targetSystemAnchor.download = 'woven_blanket_calligraphy.png';
         document.body.appendChild(targetSystemAnchor);
         targetSystemAnchor.click();
         document.body.removeChild(targetSystemAnchor);
         
-        // 5. Restore screen interaction attributes seamlessly
-        selectedElements = tempSelected;
+        selectedElements = temp;
         zoomLevel = prevZoom;
         draw();
     }
-
-
 </script>
 </body>
 </html>
-
-        
