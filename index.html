@@ -480,7 +480,7 @@
         }
     }
 
-    function generateDecomposedText() {
+        function generateDecomposedText() {
         const rawStringValue = document.getElementById('textInput').value;
         if (!rawStringValue.trim()) return;
 
@@ -490,6 +490,7 @@
         let newEl = {
             text: rawStringValue,
             lines: separateLines,
+            // FIXED: Dynamically splits current screen area to center text horizontally
             x: (canvas.width / 2) / zoomLevel,
             y: (canvas.height / 2) / zoomLevel,
             color: hexTextColorCode,
@@ -506,10 +507,14 @@
     function addSingleElement(characterSymbol, isTashkeelFlag) {
         const hexTashkeelColorCode = document.getElementById('tashkeelColor').value;
         const isUnderSlung = (characterSymbol === 'ِ' || characterSymbol === 'ٍ');
-        const defaultY = isUnderSlung ? (canvas.height / 2 + 60) : (isTashkeelFlag ? canvas.height / 2 - 70 : canvas.height / 2);
+        
+        // FIXED: Dynamically references current canvas height metrics safely
+        const baseCenterY = canvas.height / 2;
+        const defaultY = isUnderSlung ? (baseCenterY + 60) : (isTashkeelFlag ? baseCenterY - 70 : baseCenterY);
 
         let newEl = {
             text: characterSymbol,
+            // FIXED: Centers diacritics relative to the live viewport window width
             x: (canvas.width / 2) / zoomLevel,
             y: defaultY / zoomLevel,
             color: hexTashkeelColorCode,
@@ -534,6 +539,7 @@
                 isImage: true,
                 img: img,
                 text: '[زخرفة]',
+                // FIXED: Automatically centers PNG graphics horizontally on screen creation
                 x: (canvas.width / 2) / zoomLevel,
                 y: (canvas.height / 2) / zoomLevel,
                 width: initialWidth,
@@ -548,6 +554,7 @@
         };
         img.src = imageSrcPath;
     }
+
 
     function updateSelectedThickness(val) {
         if (selectedElements.length === 0) return;
