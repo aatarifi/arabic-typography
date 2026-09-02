@@ -146,6 +146,27 @@
             margin-bottom: 5px;
         }
 
+        .decor-img-preview {
+            width: 35px;
+            height: 35px;
+            object-fit: contain;
+            margin-left: 8px; /* Adds clean spacing to the left of the text label */
+            pointer-events: none; /* Prevents the image node from interrupting button clicks */
+            vertical-align: middle;
+            background: rgba(255, 255, 255, 0.8); /* Gives a soft backing so dark shapes stand out */
+            border-radius: 4px;
+            padding: 2px;
+        }
+        
+        /* Forces the container buttons to align items beautifully side-by-side */
+        .tashkeel-item {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+
         .canvas-frame {
             border: 2px dashed #94a3b8;
             border-radius: 12px;
@@ -223,17 +244,19 @@
         <div class="tashkeel-item" onclick="addSingleElement('ٍ', true)">تنوين كسر ٍ</div>
     </div>
 
+        <!-- 8 Local PNG Decorative Ornaments Bank Dashboard with Image Previews Restored -->
     <div class="tashkeel-bank" style="background-color: #e0f2fe;">
         <div class="bank-title" style="color: #0369a1;">زخارف وخامات المنسوجات المخصصة (PNG):</div>
-        <div class="tashkeel-item" onclick="addCustomImageElement('decor1.png')">زخرفة 1</div>
-        <div class="tashkeel-item" onclick="addCustomImageElement('decor2.png')">زخرفة 2</div>
-        <div class="tashkeel-item" onclick="addCustomImageElement('decor3.png')">زخرفة 3</div>
-        <div class="tashkeel-item" onclick="addCustomImageElement('decor4.png')">زخرفة 4</div>
-        <div class="tashkeel-item" onclick="addCustomImageElement('decor5.png')">زخرفة 5</div>
-        <div class="tashkeel-item" onclick="addCustomImageElement('decor6.png')">زخرفة 6</div>
-        <div class="tashkeel-item" onclick="addCustomImageElement('decor7.png')">زخرفة 7</div>
-        <div class="tashkeel-item" onclick="addCustomImageElement('decor8.png')">زخرفة 8</div>
+        <div class="tashkeel-item" onclick="addCustomImageElement('decor1.png')"><img src="decor1.png" class="decor-img-preview" alt="1"> زخرفة 1</div>
+        <div class="tashkeel-item" onclick="addCustomImageElement('decor2.png')"><img src="decor2.png" class="decor-img-preview" alt="2"> زخرفة 2</div>
+        <div class="tashkeel-item" onclick="addCustomImageElement('decor3.png')"><img src="decor3.png" class="decor-img-preview" alt="3"> زخرفة 3</div>
+        <div class="tashkeel-item" onclick="addCustomImageElement('decor4.png')"><img src="decor4.png" class="decor-img-preview" alt="4"> زخرفة 4</div>
+        <div class="tashkeel-item" onclick="addCustomImageElement('decor5.png')"><img src="decor5.png" class="decor-img-preview" alt="5"> زخرفة 5</div>
+        <div class="tashkeel-item" onclick="addCustomImageElement('decor6.png')"><img src="decor6.png" class="decor-img-preview" alt="6"> زخرفة 6</div>
+        <div class="tashkeel-item" onclick="addCustomImageElement('decor7.png')"><img src="decor7.png" class="decor-img-preview" alt="7"> زخرفة 7</div>
+        <div class="tashkeel-item" onclick="addCustomImageElement('decor8.png')"><img src="decor8.png" class="decor-img-preview" alt="8"> زخرفة 8</div>
     </div>
+
 
     <div class="canvas-frame">
         <canvas id="thuluthCanvas" width="1040" height="450"></canvas>
