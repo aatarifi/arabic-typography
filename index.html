@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>محرر ومفكك الخطوط العربية الاحترافي للمنسوجات</title>
     <style>
+        @font-face {
+            font-family: 'LaylaThuluth';
+            src: url('LaylaThuluth.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
@@ -264,7 +271,7 @@
 </div>
 
 <script>
-    const canvas = document.getElementById('thuluthCanvas');
+        const canvas = document.getElementById('thuluthCanvas');
     const ctx = canvas.getContext('2d');
     
     let elements = [];
@@ -273,9 +280,32 @@
     let dragBoxStart = null;
     let currentDragBox = null;
     let startX, startY;
+    
+    // Explicitly lock the fallback tracker array configurations
     let activeFontFamilyName = 'Arial, Traditional Arabic';
-    let isFontFullyReady = true;
-    let zoomLevel = 1.0; // Global scale configuration pointer
+    let isFontFullyReady = false; 
+    let zoomLevel = 1.0;
+
+    // Force browser memory alignment threads to cache the CSS font face tree cleanly on load
+    document.fonts.load("110px LaylaThuluth").then(() => {
+        document.fonts.ready.then(() => {
+            activeFontFamilyName = 'LaylaThuluth';
+            isFontFullyReady = true;
+            
+            // Re-calculate boundary metric data and draw the initial frame flawlessly
+            elements.forEach(el => {
+                if (!el.isImage) calculateElementBounds(el);
+            });
+            draw();
+            console.log("Default Calligraphy Font engine synchronized and pre-rendered successfully.");
+        });
+    }).catch(err => {
+        // Safe structural fallback bypass configurations if font fails loading sequence
+        activeFontFamilyName = 'Arial, Traditional Arabic';
+        isFontFullyReady = true;
+        draw();
+    });
+
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
