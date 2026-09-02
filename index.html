@@ -687,26 +687,133 @@
         }
     });
 
-    function exportTransparentPNG() {
-        const temp = selectedElements;
+            function exportTransparentPNG() {
+        // Cache active states to avoid layout disruption loops
+        const tempSelected = selectedElements;
         const prevZoom = zoomLevel;
         
+        // 1. Clear bounding selector tracks before high-res capture pass
         selectedElements = [];
         zoomLevel = 1.0;
         draw();
         
-        const absoluteExportURI = canvas.toDataURL('image/png');
+        // 2. Build high-density offscreen matrix replication buffer
+        const highResCanvas = document.createElement('canvas');
+        const hrCtx = highResCanvas.getContext('2d');
+        
+        // Apply production-grade 4x pixel density multiplier scaling parameters
+        const scaleMultiplier = 4.0; 
+        highResCanvas.width = canvas.width * scaleMultiplier;
+        highResCanvas.height = canvas.height * scaleMultiplier;
+        
+        // FIXED: Enforce high-fidelity pixel anti-aliasing interpolation filters over the context
+        hrCtx.imageSmoothingEnabled = true;
+        hrCtx.imageSmoothingQuality = 'high';
+        
+        // Sync native vector alignment contexts across upscale configurations
+        hrCtx.scale(scaleMultiplier, scaleMultiplier);
+        
+        // 3. Render clean duplication passes onto your high-res buffer map
+        for (let i = 0; i < elements.length; i++) {
+            const el = elements[i];
+            
+            // Adjust shadows relative to the 4x resolution upgrade mechanics
+            hrCtx.shadowColor = "rgba(0, 0, 0, 0.25)";
+            hrCtx.shadowBlur = 8 * scaleMultiplier;
+            hrCtx.shadowOffsetX = 3 * scaleMultiplier;
+            hrCtx.shadowOffsetY = 4 * scaleMultiplier;
+
+            if (el.isImage) {
+                const tintColor = el.color || document.getElementById('tashkeelColor').value;
+                const bufferCanvas = document.createElement('canvas');
+                const bCtx = bufferCanvas.getContext('2d');
+                bufferCanvas.width = el.width + (el.thickness * 2) + 20;
+                bufferCanvas.height = el.height + (el.thickness * 2) + 20;
+                
+                // FIXED: Enforce same smoothing rules onto the offscreen image tinting buffer context
+                bCtx.imageSmoothingEnabled = true;
+                bCtx.imageSmoothingQuality = 'high';
+                
+                const centerX = bufferCanvas.width / 2;
+                const centerY = bufferCanvas.height / 2;
+                
+                const steps = Math.ceil(el.thickness);
+                if (steps > 0) {
+                    bCtx.fillStyle = tintColor;
+                    for (let angle = 0; angle < 360; angle += 15) {
+                        const rad = angle * Math.PI / 180;
+                        const ex = centerX - el.width/2 + Math.cos(rad) * el.thickness;
+                        const ey = centerY - el.height/2 + Math.sin(rad) * el.thickness;
+                        bCtx.drawImage(el.img, ex, ey, el.width, el.height);
+                    }
+                    bCtx.globalCompositeOperation = 'source-in';
+                    bCtx.fillRect(0, 0, bufferCanvas.width, bufferCanvas.height);
+                    bCtx.globalCompositeOperation = 'source-over';
+                }
+                
+                bCtx.drawImage(el.img, centerX - el.width/2, centerY - el.height/2, el.width, el.height);
+                bCtx.globalCompositeOperation = 'source-atop';
+                bCtx.fillStyle = tintColor;
+                bCtx.fillRect(0, 0, bufferCanvas.width, bufferCanvas.height);
+                bCtx.globalCompositeOperation = 'source-over';
+                
+                hrCtx.drawImage(bufferCanvas, el.x - centerX, el.y - centerY);
+                
+            } else {
+                hrCtx.font = `${el.size}px ${activeFontFamilyName}`;
+                hrCtx.fillStyle = el.color;
+                hrCtx.textAlign = 'center';
+                hrCtx.textBaseline = 'middle';
+
+                if (el.thickness > 0) {
+                    hrCtx.strokeStyle = el.color;
+                    hrCtx.lineWidth = el.thickness * 1.5;
+                    hrCtx.lineJoin = "round";
+                    
+                    if (el.lines) {
+                        let lineY = el.y - ((el.lines.length - 1) * el.size * 0.6);
+                        el.lines.forEach(line => {
+                            hrCtx.strokeText(line, el.x, lineY);
+                            lineY += el.size * 1.2;
+                        });
+                    } else {
+                        hrCtx.strokeText(el.text, el.x, el.y);
+                    }
+                }
+                
+                if (el.lines) {
+                    let lineY = el.y - ((el.lines.length - 1) * el.size * 0.6);
+                    el.lines.forEach(line => {
+                        hrCtx.fillText(line, el.x, lineY);
+                        lineY += el.size * 1.2;
+                    });
+                } else {
+                    hrCtx.fillText(el.text, el.x, el.y);
+                }
+            }
+
+            hrCtx.shadowColor = "transparent";
+            hrCtx.shadowBlur = 0;
+            hrCtx.shadowOffsetX = 0;
+            hrCtx.shadowOffsetY = 0;
+        }
+
+        // 4. Stream high-res asset stream onto clean download package links
+        const absoluteExportURI = highResCanvas.toDataURL('image/png');
         const targetSystemAnchor = document.createElement('a');
         targetSystemAnchor.href = absoluteExportURI;
-        targetSystemAnchor.download = 'woven_blanket_calligraphy.png';
+        targetSystemAnchor.download = 'production_ready_woven_blanket.png';
         document.body.appendChild(targetSystemAnchor);
         targetSystemAnchor.click();
         document.body.removeChild(targetSystemAnchor);
         
-        selectedElements = temp;
+        // 5. Restore screen interaction attributes seamlessly
+        selectedElements = tempSelected;
         zoomLevel = prevZoom;
         draw();
     }
+
+
 </script>
 </body>
 </html>
