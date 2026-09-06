@@ -234,6 +234,7 @@
         <button class="btn-primary" onclick="generateDecomposedText()">إضافة النص</button>
         <button class="btn-warning" onclick="clearCanvas()">مسح الشاشة</button>
         <button class="btn-success" onclick="exportTransparentPNG()">تحميل PNG شفاف</button>
+
     </div>
 
     <div class="tashkeel-bank">
@@ -298,6 +299,7 @@
         draw();
     });
 
+    
     function renderImageElement(targetCtx, el) {
     const tintColor = el.color || document.getElementById('tashkeelColor').value;
     
@@ -308,10 +310,11 @@
         const scaleFactor = el.size / el.svgWidth;
         targetCtx.scale(scaleFactor, scaleFactor);
 
-        targetCtx.shadowColor = "rgba(0, 0, 0, 0.25)";
-        targetCtx.shadowBlur = 8 / scaleFactor;
-        targetCtx.shadowOffsetX = 3 / scaleFactor;
-        targetCtx.shadowOffsetY = 4 / scaleFactor;
+        // IRONCLAD REMOVAL: Stripped shadowColor, shadowBlur, and offsets from SVG vectors completely
+        targetCtx.shadowColor = "transparent";
+        targetCtx.shadowBlur = 0;
+        targetCtx.shadowOffsetX = 0;
+        targetCtx.shadowOffsetY = 0;
 
         if (el.thickness > 0) {
             targetCtx.strokeStyle = tintColor;
@@ -341,6 +344,11 @@
         const scaleFactor = el.size / 100;
         targetCtx.scale(scaleFactor, scaleFactor);
 
+        targetCtx.shadowColor = "transparent";
+        targetCtx.shadowBlur = 0;
+        targetCtx.shadowOffsetX = 0;
+        targetCtx.shadowOffsetY = 0;
+
         const bufferCanvas = document.createElement('canvas');
         const bCtx = bufferCanvas.getContext('2d');
         const baseW = 100;
@@ -359,10 +367,12 @@
         targetCtx.drawImage(bufferCanvas, -centerX, -centerY);
     }
 
+    targetCtx.shadowColor = "transparent";
+    targetCtx.shadowBlur = 0;
+    targetCtx.shadowOffsetX = 0;
+    targetCtx.shadowOffsetY = 0;
     targetCtx.restore();
 }
-
-
 
 
         function draw() {
@@ -370,30 +380,22 @@
         ctx.save();
         ctx.scale(zoomLevel, zoomLevel);
         
+        // REMOVED ALL SHADOW PROPERTIES ENTIRELY FROM THE MAIN SYSTEM RENDERING PIPELINE
         for (let i = 0; i < elements.length; i++) {
             const el = elements[i];
 
-            // Render select track highlight boxes accurately
             if (selectedElements.includes(el)) {
                 ctx.save();
                 ctx.strokeStyle = '#3b82f6';
                 ctx.lineWidth = 2 / zoomLevel;
-                ctx.shadowColor = "transparent"; // Bypass shadow bleeding on frames
                 ctx.strokeRect(el.x - el.width / 2 - 6, el.y - el.height / 2 - 6, el.width + 12, el.height + 12);
                 ctx.restore();
             }
 
             if (el.isImage) {
-                // Execute the upgraded clean vector scaling engine
                 renderImageElement(ctx, el);
             } else {
-                // Keep default font text rendering loops crisp
                 ctx.save();
-                ctx.shadowColor = "rgba(0, 0, 0, 0.25)";
-                ctx.shadowBlur = 8;
-                ctx.shadowOffsetX = 3;
-                ctx.shadowOffsetY = 4;
-                
                 ctx.font = `${el.size}px ${activeFontFamilyName}`;
                 ctx.fillStyle = el.color;
                 ctx.textAlign = 'center';
@@ -440,6 +442,8 @@
             ctx.strokeRect(dragBoxStart.x, dragBoxStart.y, w, h);
         }
     }
+
+
 
 
     function updateWorkspaceZoom(val) {
@@ -866,87 +870,85 @@
     });
 
     function exportTransparentPNG() {
-        const temp = selectedElements;
-        const prevZoom = zoomLevel;
-        
-        selectedElements = [];
-        zoomLevel = 1.0;
-        draw();
-        
-        const scaleMultiplier = 4.0;
-        const highResCanvas = document.createElement('canvas');
-        const hrCtx = highResCanvas.getContext('2d');
-        highResCanvas.width = canvas.width * scaleMultiplier;
-        highResCanvas.height = canvas.height * scaleMultiplier;
-        
-        hrCtx.imageSmoothingEnabled = true;
-        hrCtx.imageSmoothingQuality = 'high';
-        hrCtx.scale(scaleMultiplier, scaleMultiplier);
-        
-                for (let i = 0; i < elements.length; i++) {
-            const el = elements[i];
-            
-            // Sync upscaled shadow parameters across the 4x density multiplier
-            hrCtx.shadowColor = "rgba(0, 0, 0, 0.25)";
-            hrCtx.shadowBlur = 8 * scaleMultiplier;
-            hrCtx.shadowOffsetX = 3 * scaleMultiplier;
-            hrCtx.shadowOffsetY = 4 * scaleMultiplier;
+    // Cache active states to avoid layout disruption loops
+    const tempSelected = selectedElements;
+    const prevZoom = zoomLevel;
+    
+    // 1. Clear bounding selector tracks before high-res capture pass
+    selectedElements = [];
+    zoomLevel = 1.0;
+    draw();
+    
+    // 2. Build high-density offscreen matrix replication buffer
+    const scaleMultiplier = 4.0;
+    const highResCanvas = document.createElement('canvas');
+    const hrCtx = highResCanvas.getContext('2d');
+    highResCanvas.width = canvas.width * scaleMultiplier;
+    highResCanvas.height = canvas.height * scaleMultiplier;
+    
+    hrCtx.imageSmoothingEnabled = true;
+    hrCtx.imageSmoothingQuality = 'high';
+    hrCtx.scale(scaleMultiplier, scaleMultiplier);
+    
+    // 3. Render clean duplication passes with ALL SHADOWS REMOVED ENTIRELY
+    for (let i = 0; i < elements.length; i++) {
+        const el = elements[i];
 
-            if (el.isImage) {
-                // The advanced vector engine auto-detects resolution limits and scales perfectly sharp
-                renderImageElement(hrCtx, el);
-            } else {
-                hrCtx.font = `${el.size}px ${activeFontFamilyName}`;
-                hrCtx.fillStyle = el.color;
-                hrCtx.textAlign = 'center';
-                hrCtx.textBaseline = 'middle';
+        if (el.isImage) {
+            renderImageElement(hrCtx, el);
+        } else {
+            hrCtx.save();
+            hrCtx.font = `${el.size}px ${activeFontFamilyName}`;
+            hrCtx.fillStyle = el.color;
+            hrCtx.textAlign = 'center';
+            hrCtx.textBaseline = 'middle';
 
-                if (el.thickness > 0) {
-                    hrCtx.strokeStyle = el.color;
-                    hrCtx.lineWidth = el.thickness * 1.5;
-                    hrCtx.lineJoin = "round";
-                    
-                    if (el.lines) {
-                        let lineY = el.y - ((el.lines.length - 1) * el.size * 0.6);
-                        el.lines.forEach(line => { 
-                            hrCtx.strokeText(line, el.x, lineY); 
-                            lineY += el.size * 1.2; 
-                        });
-                    } else {
-                        hrCtx.strokeText(el.text, el.x, el.y);
-                    }
-                }
+            if (el.thickness > 0) {
+                hrCtx.strokeStyle = el.color;
+                hrCtx.lineWidth = el.thickness * 1.5;
+                hrCtx.lineJoin = "round";
                 
                 if (el.lines) {
                     let lineY = el.y - ((el.lines.length - 1) * el.size * 0.6);
-                    el.lines.forEach(line => { 
-                        hrCtx.fillText(line, el.x, lineY); 
-                        lineY += el.size * 1.2; 
+                    el.lines.forEach(line => {
+                        hrCtx.strokeText(line, el.x, lineY);
+                        lineY += el.size * 1.2;
                     });
                 } else {
-                    hrCtx.fillText(el.text, el.x, el.y);
+                    hrCtx.strokeText(el.text, el.x, el.y);
                 }
             }
-
-            hrCtx.shadowColor = "transparent";
-            hrCtx.shadowBlur = 0;
-            hrCtx.shadowOffsetX = 0;
-            hrCtx.shadowOffsetY = 0;
+            
+            if (el.lines) {
+                let lineY = el.y - ((el.lines.length - 1) * el.size * 0.6);
+                el.lines.forEach(line => {
+                    hrCtx.fillText(line, el.x, lineY);
+                    lineY += el.size * 1.2;
+                });
+            } else {
+                hrCtx.fillText(el.text, el.x, el.y);
+            }
+            hrCtx.restore();
         }
-
-
-        const absoluteExportURI = highResCanvas.toDataURL('image/png');
-        const targetSystemAnchor = document.createElement('a');
-        targetSystemAnchor.href = absoluteExportURI;
-        targetSystemAnchor.download = 'production_ready_woven_blanket.png';
-        document.body.appendChild(targetSystemAnchor);
-        targetSystemAnchor.click();
-        document.body.removeChild(targetSystemAnchor);
-        
-        selectedElements = temp;
-        zoomLevel = prevZoom;
-        draw();
     }
+
+    // 4. Stream high-res asset stream onto clean download package links
+    const absoluteExportURI = highResCanvas.toDataURL('image/png');
+    const targetSystemAnchor = document.createElement('a');
+    targetSystemAnchor.href = absoluteExportURI;
+    targetSystemAnchor.download = 'production_ready_woven_blanket.png';
+    document.body.appendChild(targetSystemAnchor);
+    targetSystemAnchor.click();
+    document.body.removeChild(targetSystemAnchor);
+    
+    // 5. Restore screen interaction attributes seamlessly
+    selectedElements = tempSelected;
+    zoomLevel = prevZoom;
+    draw();
+}
+
+       
+
 </script>
 </body>
 </html>
